@@ -1,0 +1,15 @@
+dns:
+  - 8.8.8.8
+  - 8.8.4.4
+
+routeros:
+  address: 10.2.1.1
+  port: 8728
+  usetls: false
+  username: admin
+  password: password
+  vpn:
+    interface: VPN
+    whitelisted_domains:
+      - youtube.com
+      - twitter.com

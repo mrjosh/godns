@@ -14,7 +14,7 @@ jobs:
       DOCKER_IMAGE: mrjoshlab/godns
       DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      DOCKER_TARGET_PLATFORM: linux/amd64
+      DOCKER_TARGET_PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2

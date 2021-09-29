@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+
+  godns:
+    image: mrjoshlab/godns
+    restart: always
+    ports:
+      - 53:53
+    volumes:
+      - ./config.yaml:/data/config.yaml

@@ -188,12 +188,18 @@ func main() {
 	logrus.SetOutput(os.Stdout)
 
 	configFile := flag.String("config-file", "config.yaml", "Config file path")
+	flag.Parse()
+
 	cfg, err := Load(*configFile)
 	if err != nil {
 		logrus.WithError(err)
 		return
 	}
 
+	logrus.Info(
+		"Connecting to mikrotik",
+		fmt.Sprintf("%s:%d", cfg.RouterOS.Address, cfg.RouterOS.Port),
+	)
 	rand.Seed(time.Now().UnixNano())
 	mikrotik, err = RouterOSDialer(
 		cfg.RouterOS.UseTLS,

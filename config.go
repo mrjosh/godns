@@ -22,6 +22,7 @@ type RouterOSConf struct {
 
 type VPNConf struct {
 	Interface          string   `yaml:"interface"`
+	Dns                []string `yaml:"dns"`
 	WhitelistedDomains []string `yaml:"whitelisted_domains"`
 }
 

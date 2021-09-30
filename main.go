@@ -29,6 +29,7 @@ func (d *DnsResolver) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 
 		msg.Authoritative = true
 		domain := msg.Question[0].Name
+		logrus.WithField("domain", domain).Info("Resolving domain")
 
 		r := Resolve{cfg: d.cfg, Name: domain}
 		if !r.IsVPNListDomain() {
@@ -47,7 +48,7 @@ func (d *DnsResolver) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			// If the domain is listed under whilelisted domains
 			// we should get the dns results from a dns server
 			// thats under VPN interface itself
-			if err := r.AskUpstr("9.9.9.9"); err != nil {
+			if err := r.AskUpstr(d.cfg.RouterOS.VPN.Dns[0]); err != nil {
 				logrus.WithField("dns-server", "9.9.9.9").
 					Info("dns ask err: %v", err.Error())
 			}
@@ -55,8 +56,6 @@ func (d *DnsResolver) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			go func() {
 
 				// adding domain ip addresses to mikrotik vpn interface
-				logrus.WithField("mikrotik", "").
-					Info("Setting domain ip addresses at mikrotik")
 				if err := r.SetToMikritik(); err != nil {
 					logrus.WithField("mikrotik", "").
 						Info(fmt.Sprintf("mikrotik ip firewall add err: %v", err.Error()))
@@ -108,8 +107,10 @@ func (rr *Resolve) SetToMikritik() error {
 			Info(fmt.Sprintf("putting the domain ip addresses to mikrotik: %s", addr))
 		address := fmt.Sprintf("=address=%s", addr)
 		if _, err := mikrotik.RunArgs(append(args, []string{address}...)); err != nil {
-			logrus.WithField("mikrotik", "").
-				Info(fmt.Sprintf("err ip firewall add to mikrotik: %v", err.Error()))
+			if !strings.Contains(err.Error(), "already") {
+				logrus.WithField("mikrotik", "").
+					Info(fmt.Sprintf("err ip firewall add to mikrotik: %v", err.Error()))
+			}
 		}
 	}
 
@@ -192,7 +193,7 @@ func main() {
 
 	cfg, err := Load(*configFile)
 	if err != nil {
-		logrus.WithError(err)
+		logrus.WithError(err).Info("Error on loading config")
 		return
 	}
 
@@ -208,7 +209,7 @@ func main() {
 		cfg.RouterOS.Password,
 	)
 	if err != nil {
-		logrus.WithError(err)
+		logrus.WithError(err).Info("Error on connecting to RouterOS")
 		return
 	}
 
@@ -220,7 +221,7 @@ func main() {
 	logrus.Info("dns listen on: ", "udp/0.0.0.0:53")
 
 	if err := srv.ListenAndServe(); err != nil {
-		logrus.WithError(err)
+		logrus.WithError(err).Info("Error on ListenAndServe")
 		return
 	}
 

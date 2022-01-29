@@ -34,11 +34,13 @@ func (d *DnsResolver) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		r := Resolve{cfg: d.cfg, Name: domain}
 		if !r.IsVPNListDomain() {
 
-			if err := r.AskUpstr(d.cfg.Dns[0]); err != nil {
-				logrus.WithField("dns-server", d.cfg.Dns[0]).
+			resolvers := d.cfg.Dns.Resolvers
+
+			if err := r.AskUpstr(resolvers[0]); err != nil {
+				logrus.WithField("dns-server", resolvers[0]).
 					Info(fmt.Sprintf("dns ask err: %v", err.Error()))
-				if err := r.AskUpstr(d.cfg.Dns[1]); err != nil {
-					logrus.WithField("dns-server", d.cfg.Dns[1]).
+				if err := r.AskUpstr(resolvers[1]); err != nil {
+					logrus.WithField("dns-server", resolvers[1]).
 						Info(fmt.Sprintf("dns ask err: %v", err.Error()))
 				}
 			}
@@ -117,7 +119,39 @@ func (rr *Resolve) SetToMikritik() error {
 	return nil
 }
 
+func (rr *Resolve) isCustomDNSName() (*DNSRecord, bool) {
+	for _, n := range rr.cfg.Dns.Names {
+		if strings.Contains(rr.Name, n.Name) {
+			return &n, true
+		}
+	}
+	return nil, false
+}
+
 func (rr *Resolve) AskUpstr(upStrdns string) error {
+
+	if crecord, ok := rr.isCustomDNSName(); ok {
+
+		rr.Answer = append(rr.Answer, &dns.CNAME{
+			Hdr: dns.RR_Header{
+				Name:   rr.Name,
+				Rrtype: dns.TypeCNAME,
+				Class:  dns.ClassINET,
+			},
+			Target: rr.Name,
+		})
+		rr.Addresses = append(rr.Addresses, crecord.Target)
+		rr.Answer = append(rr.Answer, &dns.A{
+			Hdr: dns.RR_Header{
+				Name:   rr.Name,
+				Rrtype: dns.TypeA,
+				Class:  dns.ClassINET,
+				Ttl:    60,
+			},
+			A: net.ParseIP(crecord.Target),
+		})
+		return nil
+	}
 
 	r := &net.Resolver{
 		PreferGo: true,

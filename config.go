@@ -7,8 +7,18 @@ import (
 )
 
 type ConfMap struct {
-	Dns      []string     `yaml:"dns"`
+	Dns      DNSConfMap   `yaml:"dns"`
 	RouterOS RouterOSConf `yaml:"routeros"`
+}
+
+type DNSConfMap struct {
+	Resolvers []string    `yaml:"resolvers"`
+	Names     []DNSRecord `yaml:"names"`
+}
+
+type DNSRecord struct {
+	Name   string `yaml:"name"`
+	Target string `yaml:"target"`
 }
 
 type RouterOSConf struct {
